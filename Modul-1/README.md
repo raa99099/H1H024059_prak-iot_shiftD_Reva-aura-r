@@ -1,4 +1,4 @@
-Modul 1 — Praktikum Internet of Things (TK245005)
+Modul 1 Akuisisi Data Sensor dan Kendali Aktuator Praktikum Internet of Things (TK245005)
 
 Program Studi Teknik Komputer UNSOED Semester Genap, 2026/5
 
