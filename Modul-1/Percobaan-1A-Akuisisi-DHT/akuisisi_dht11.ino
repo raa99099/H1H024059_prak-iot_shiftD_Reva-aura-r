@@ -1,5 +1,3 @@
-1. Program yang Digunakan
-Program disusun mengikuti struktur pada modul (pembacaan suhu dan kelembaban setiap 2 detik). Pada pelaksanaannya, sensor yang tersedia dan digunakan adalah DHT11 (bukan DHT22 seperti pada modul), sehingga baris DHTTYPE diubah menjadi DHT11; struktur logika program (dht.begin(), pembacaan, pengecekan isnan(), dan delay 2 detik) tetap mengikuti modul karena pustaka DHT.h mendukung kedua tipe sensor tersebut.
 #include <DHT.h>
 #define DHTPIN 4    	// Pin data DHT11 terhubung ke GPIO 4
 #define DHTTYPE DHT11	// Tipe sensor yang digunakan
@@ -28,4 +26,3 @@ void loop() {
   }
   delay(2000); // Jeda pembacaan setiap 2 detik
 }
-
