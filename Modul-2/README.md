@@ -1,76 +1,95 @@
+# MODUL PRAKTIKUM 2
 
-# Praktikum Internet of Things (IoT) - Modul 2
-
-## Koneksi WiFi: Station (STA) dan Access Point (AP)
-
-### Identitas
-
-**Nama:** Reva Aura Ramadhani
-**NIM:** H1H024059
-**Mata Kuliah:** Praktikum Internet of Things
-**Kode:** TK245005
-**Modul:** 2
-**Semester:** Genap 2026/5
+## KONFIGURASI JARINGAN ESP32
 
 ---
 
-## 1. Deskripsi
+# 2.5.4 Pertanyaan Praktikum
 
-Praktikum Modul 2 membahas konfigurasi koneksi WiFi pada perangkat mikrokontroler menggunakan dua mode, yaitu **Station (STA)** dan **Access Point (AP)**.
+### 1. Gambarkan diagram alur (flowchart) proses koneksi ESP32 ke jaringan WiFi pada program di atas!
 
-Pada praktikum ini digunakan **NodeMCU ESP8266** sebagai pengganti ESP32 karena perangkat ESP32 tidak tersedia. Library yang digunakan juga disesuaikan menjadi `ESP8266WiFi.h`.
+**Jawaban:**
 
-Praktikum terdiri dari:
-
-1. Percobaan 2A - Station (STA)
-2. Percobaan 2B - Access Point (AP)
-
----
-
-# 2. Percobaan 2A - Station (STA)
-
-## Tujuan
-
-Percobaan ini bertujuan untuk menghubungkan NodeMCU ESP8266 ke jaringan WiFi sebagai **Station (STA)** serta menampilkan informasi koneksi melalui Serial Monitor.
-
-Informasi yang ditampilkan meliputi:
-
-* Status koneksi WiFi
-* IP Address
-* MAC Address
-* RSSI
-* Status LED
-
-## Komponen
-
-* NodeMCU ESP8266
-* Kabel USB
-* Jaringan WiFi/Hotspot
-* Arduino IDE
-
-## Library
-
-```cpp
-#include <ESP8266WiFi.h>
+```text
+              ┌─────────────┐
+              │    MULAI    │
+              └──────┬──────┘
+                     │
+                     ▼
+          ┌─────────────────────┐
+          │ Inisialisasi Serial │
+          └──────────┬──────────┘
+                     │
+                     ▼
+          ┌─────────────────────┐
+          │ WiFi.mode(WIFI_STA) │
+          └──────────┬──────────┘
+                     │
+                     ▼
+          ┌─────────────────────┐
+          │ WiFi.begin(SSID,    │
+          │ PASSWORD)           │
+          └──────────┬──────────┘
+                     │
+                     ▼
+             ┌───────────────┐
+             │ WiFi terhubung?│
+             └───────┬───────┘
+                 Tidak│      │Ya
+                     │      │
+                     ▼      ▼
+             ┌───────────┐  ┌──────────────────┐
+             │ Tunggu    │  │ Tampilkan pesan  │
+             │ 500 ms    │  │ WiFi terhubung   │
+             └─────┬─────┘  └────────┬─────────┘
+                   │                 │
+                   └──────►──────────┘
+                                     │
+                                     ▼
+                            ┌─────────────────┐
+                            │ Tampilkan IP    │
+                            │ Address         │
+                            └────────┬────────┘
+                                     │
+                                     ▼
+                              ┌────────────┐
+                              │   SELESAI  │
+                              └────────────┘
 ```
 
-## Kode Program
+---
+
+### 2. Apa fungsi dari perintah `WiFi.mode(WIFI_STA)` pada program tersebut?
+
+**Jawaban:**
+
+Perintah `WiFi.mode(WIFI_STA)` berfungsi untuk mengatur ESP32 agar bekerja dalam **mode Station (STA)**. Dalam mode ini, ESP32 berperan sebagai klien yang terhubung ke jaringan WiFi yang sudah tersedia, seperti router atau hotspot smartphone.
+
+---
+
+### 3. Jelaskan apa yang terjadi apabila SSID atau password yang dimasukkan salah!
+
+**Jawaban:**
+
+Jika SSID atau password yang dimasukkan salah, ESP32 tidak dapat terhubung ke jaringan WiFi yang dituju. Status koneksi tidak akan mencapai `WL_CONNECTED`. Program akan terus memeriksa status koneksi apabila menggunakan perulangan `while`.
+
+ESP32 juga tidak memperoleh IP address dari jaringan tersebut karena koneksi belum berhasil.
+
+---
+
+### 4. Modifikasi program agar ESP32 mencoba menghubungkan ulang (reconnect) secara otomatis apabila koneksi WiFi terputus!
+
+**Jawaban:**
 
 ```cpp
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 
-const char* ssid = "realme C53";
+const char* ssid = "NAMA_WIFI";
 const char* password = "PASSWORD_WIFI";
-
-const int ledPin = D4; // GPIO 2 sebagai LED indikator status koneksi
 
 void setup() {
   Serial.begin(115200);
 
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
-
-  // Set mode WiFi menjadi Station
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
 
@@ -81,256 +100,117 @@ void setup() {
     Serial.print(".");
   }
 
-  // Jika berhasil terhubung
   Serial.println();
-  Serial.println("WiFi berhasil terhubung!");
-
+  Serial.println("WiFi terhubung!");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
-
-  Serial.print("MAC Address: ");
-  Serial.println(WiFi.macAddress());
-
-  Serial.print("RSSI (dBm): ");
-  Serial.println(WiFi.RSSI());
-
-  digitalWrite(ledPin, HIGH); // Nyalakan LED sebagai indikator
 }
 
 void loop() {
-  // Cek status koneksi setiap 5 detik
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("Status: Terhubung");
-  } else {
-    Serial.println("Status: Terputus");
-    digitalWrite(ledPin, LOW);
+
+  if (WiFi.status() != WL_CONNECTED) {
+
+    Serial.println("WiFi terputus! Mencoba reconnect...");
+
+    WiFi.disconnect();
+    WiFi.begin(ssid, password);
+
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+
+    Serial.println();
+    Serial.println("WiFi berhasil terhubung kembali!");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
   }
 
-  delay(5000);
+  delay(1000);
 }
 ```
 
-> **Catatan:** `PASSWORD_WIFI` digunakan sebagai pengganti password WiFi asli agar password tidak dipublikasikan di repository GitHub.
+### Penjelasan kode tambahan
 
-## Hasil Pengamatan
+**`if (WiFi.status() != WL_CONNECTED)`**
 
-Setelah program dijalankan, NodeMCU berhasil terhubung ke jaringan WiFi. Serial Monitor menampilkan informasi koneksi berupa IP Address, MAC Address, RSSI, serta status koneksi.
+Digunakan untuk memeriksa apakah ESP32 masih terhubung ke jaringan WiFi.
 
-LED pada pin D4 digunakan sebagai indikator ketika perangkat berhasil terhubung ke WiFi.
+**`WiFi.disconnect();`**
 
-### Output Serial Monitor
+Digunakan untuk memutus koneksi WiFi sebelumnya sebelum melakukan koneksi ulang.
 
-```text
-Menghubungkan ke WiFi....
-WiFi berhasil terhubung!
-IP Address: [IP Address]
-MAC Address: [MAC Address]
-RSSI (dBm): [RSSI]
-Status: Terhubung
-Status: Terhubung
-Status: Terhubung
-```
+**`WiFi.begin(ssid, password);`**
 
----
+Digunakan untuk mencoba menghubungkan kembali ESP32 ke jaringan WiFi.
 
-# 3. Percobaan 2B - Access Point (AP)
+**`while (WiFi.status() != WL_CONNECTED)`**
 
-## Tujuan
+Digunakan untuk terus memeriksa koneksi sampai ESP32 berhasil terhubung kembali.
 
-Percobaan ini bertujuan untuk membuat NodeMCU ESP8266 menjadi **Access Point (AP)** sehingga perangkat lain dapat terhubung ke jaringan WiFi yang dibuat oleh NodeMCU.
+**`delay(500);`**
 
-Program juga digunakan untuk mengetahui jumlah perangkat yang sedang terhubung ke Access Point.
+Memberikan jeda 500 milidetik pada setiap pemeriksaan koneksi.
 
-## Komponen
+**`WiFi.localIP()`**
 
-* NodeMCU ESP8266
-* Kabel USB
-* Laptop/PC
-* Smartphone atau perangkat lain sebagai client
-* Arduino IDE
-
-## Library
-
-```cpp
-#include <ESP8266WiFi.h>
-```
-
-## Konfigurasi Access Point
-
-| Parameter  | Nilai             |
-| ---------- | ----------------- |
-| SSID       | ESP32_AccessPoint |
-| Password   | 12345678          |
-| IP Address | 192.168.4.1       |
-| Mode WiFi  | Access Point      |
-
-## Kode Program
-
-```cpp
-#include <ESP8266WiFi.h>
-
-const char* ap_ssid = "ESP32_AccessPoint";
-const char* ap_password = "12345678";
-
-void setup() {
-  Serial.begin(115200);
-
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(ap_ssid, ap_password);
-
-  IPAddress apIP = WiFi.softAPIP();
-
-  Serial.println("Access Point aktif!");
-
-  Serial.print("SSID : ");
-  Serial.println(ap_ssid);
-
-  Serial.print("IP Address : ");
-  Serial.println(apIP);
-}
-
-void loop() {
-  int jumlahClient = WiFi.softAPgetStationNum();
-
-  Serial.print("Jumlah perangkat terhubung: ");
-  Serial.println(jumlahClient);
-
-  delay(5000);
-}
-```
-
-## Hasil Konfigurasi
-
-| No. | Parameter           | Nilai Konfigurasi | Hasil Pengamatan   |
-| --: | ------------------- | ----------------- | ------------------ |
-|   1 | SSID                | ESP32_AccessPoint | ESP32_AccessPoint  |
-|   2 | Password            | 12345678          | Berhasil digunakan |
-|   3 | IP Address          | 192.168.4.1       | 192.168.4.1        |
-|   4 | Status AP           | Aktif             | Aktif              |
-|   5 | SSID terdeteksi     | Ya                | Ya                 |
-|   6 | Perangkat terhubung | -                 | Berhasil           |
-
-## Pengamatan Jumlah Client
-
-Jumlah perangkat yang terhubung diamati setiap 5 detik melalui Serial Monitor.
-
-| No. | Waktu (s) | Jumlah Client | Keterangan            |
-| --: | --------: | ------------: | --------------------- |
-|   1 |         0 |             0 | Belum ada perangkat   |
-|   2 |         5 |             0 | Belum ada perangkat   |
-|   3 |        10 |             0 | Belum ada perangkat   |
-|   4 |        15 |             0 | Belum ada perangkat   |
-|   5 |        20 |             0 | Belum ada perangkat   |
-|   6 |        25 |             0 | Belum ada perangkat   |
-|   7 |        30 |             0 | Belum ada perangkat   |
-|   8 |        35 |             1 | 1 perangkat terhubung |
-|   9 |        40 |             1 | 1 perangkat terhubung |
-|  10 |        45 |             2 | 2 perangkat terhubung |
-
-### Output Serial Monitor
-
-```text
-Access Point aktif!
-SSID : ESP32_AccessPoint
-IP Address : 192.168.4.1
-
-Jumlah perangkat terhubung: 0
-Jumlah perangkat terhubung: 0
-Jumlah perangkat terhubung: 0
-Jumlah perangkat terhubung: 0
-Jumlah perangkat terhubung: 0
-Jumlah perangkat terhubung: 0
-Jumlah perangkat terhubung: 0
-Jumlah perangkat terhubung: 1
-Jumlah perangkat terhubung: 1
-Jumlah perangkat terhubung: 2
-```
+Digunakan untuk menampilkan IP address ESP32 setelah berhasil terhubung kembali. Fungsi-fungsi tersebut merupakan bagian dari pustaka WiFi.h yang digunakan pada konfigurasi WiFi ESP32.
 
 ---
 
-# 4. Perbandingan Mode STA dan AP
+# 2.7 Pertanyaan Praktikum
 
-| Parameter                   | Station (STA)              | Access Point (AP)     |
-| --------------------------- | -------------------------- | --------------------- |
-| Fungsi                      | Terhubung ke jaringan WiFi | Membuat jaringan WiFi |
-| NodeMCU berperan sebagai    | Client                     | Access Point          |
-| Terhubung ke router/hotspot | Ya                         | Tidak                 |
-| Membuat SSID sendiri        | Tidak                      | Ya                    |
-| IP Address                  | Diperoleh dari jaringan    | 192.168.4.1           |
-| Monitoring client           | Tidak                      | Ya                    |
-| Library                     | ESP8266WiFi.h              | ESP8266WiFi.h         |
+### 1. Uraikan hasil tugas pada praktikum yang telah dilakukan pada setiap percobaan!
 
----
+**Jawaban:**
 
-# 5. Analisis
+Pada praktikum konfigurasi jaringan ESP32, percobaan dilakukan untuk memahami penggunaan beberapa mode jaringan WiFi. Pada mode **Station (STA)**, ESP32 berhasil dikonfigurasikan sebagai klien yang terhubung ke jaringan WiFi yang tersedia. Setelah berhasil terhubung, informasi jaringan seperti IP address dapat ditampilkan.
 
-Pada percobaan **Station (STA)**, NodeMCU ESP8266 berfungsi sebagai client yang terhubung ke jaringan WiFi yang tersedia. Program menggunakan `WiFi.mode(WIFI_STA)` untuk menentukan mode Station dan `WiFi.begin()` untuk memulai koneksi.
+Pada mode **Access Point (AP)**, ESP32 dikonfigurasikan sebagai penyedia jaringan atau hotspot sehingga perangkat lain seperti laptop atau smartphone dapat terhubung langsung ke ESP32.
 
-Setelah koneksi berhasil, program menampilkan IP Address, MAC Address, dan RSSI melalui Serial Monitor. LED pada pin D4 digunakan sebagai indikator bahwa koneksi WiFi berhasil.
-
-Pada percobaan **Access Point (AP)**, NodeMCU ESP8266 berfungsi sebagai pembuat jaringan WiFi. Mode AP diatur menggunakan `WiFi.mode(WIFI_AP)`, kemudian jaringan dibuat menggunakan `WiFi.softAP()`.
-
-Access Point menggunakan SSID `ESP32_AccessPoint` dan memiliki IP Address `192.168.4.1`. Jumlah perangkat yang terhubung dapat dipantau menggunakan `WiFi.softAPgetStationNum()`.
-
-Berdasarkan hasil pengamatan, pada awal pengujian belum terdapat perangkat yang terhubung. Pada detik ke-35 terdapat 1 perangkat yang terhubung, kemudian pada detik ke-45 jumlah perangkat bertambah menjadi 2.
+Pada mode **AP+STA**, ESP32 dapat berfungsi sebagai klien yang terhubung ke jaringan WiFi sekaligus menyediakan Access Point. Hasil percobaan menunjukkan bahwa ESP32 dapat menjalankan fungsi jaringan sesuai dengan mode yang dikonfigurasikan.
 
 ---
 
-# 6. Kesimpulan
+### 2. Bagaimana pengaruh kekuatan sinyal (RSSI) terhadap kestabilan koneksi WiFi pada perangkat IoT?
 
-Berdasarkan praktikum yang telah dilakukan, NodeMCU ESP8266 berhasil digunakan untuk menerapkan koneksi WiFi dalam mode **Station (STA)** dan **Access Point (AP)**.
+**Jawaban:**
 
-Pada mode STA, NodeMCU berhasil terhubung ke jaringan WiFi dan menampilkan informasi berupa IP Address, MAC Address, RSSI, serta status koneksi melalui Serial Monitor.
+RSSI (*Received Signal Strength Indicator*) menunjukkan kekuatan sinyal WiFi yang diterima oleh ESP32 dan dinyatakan dalam satuan dBm. Semakin kuat sinyal yang diterima, koneksi WiFi umumnya lebih stabil. Sebaliknya, sinyal yang lemah dapat menyebabkan koneksi menjadi kurang stabil, komunikasi data terganggu, atau koneksi terputus.
 
-Pada mode AP, NodeMCU berhasil membuat jaringan WiFi sendiri dengan SSID `ESP32_AccessPoint` dan IP Address `192.168.4.1`. Program juga berhasil memantau jumlah perangkat yang terhubung secara berkala.
-
-Dengan demikian, praktikum ini memberikan pemahaman mengenai penggunaan NodeMCU ESP8266 sebagai perangkat yang dapat terhubung ke jaringan WiFi maupun sebagai pembuat jaringan WiFi.
+Oleh karena itu, kekuatan sinyal merupakan salah satu parameter yang perlu diperhatikan pada perangkat IoT yang menggunakan koneksi WiFi. Fungsi `WiFi.RSSI()` dapat digunakan untuk membaca kekuatan sinyal WiFi pada ESP32.
 
 ---
 
-# 7. Struktur Repository
+### 3. Bagaimana cara kerja ESP32 dalam membedakan peran sebagai klien (Station) dan sebagai penyedia jaringan (Access Point)?
 
-```text
-Modul-2-IoT/
-│
-├── README.md
-│
-├── Percobaan_2A_STA/
-│   └── STA.ino
-│
-└── Percobaan_2B_AP/
-    └── AP.ino
-```
+**Jawaban:**
+
+ESP32 membedakan perannya berdasarkan mode WiFi yang dikonfigurasikan.
+
+Pada **mode Station (STA)**, ESP32 berperan sebagai **klien** yang terhubung ke jaringan WiFi yang sudah tersedia, seperti router atau hotspot smartphone.
+
+Sedangkan pada **mode Access Point (AP)**, ESP32 berperan sebagai **penyedia jaringan** atau hotspot yang dapat diakses langsung oleh perangkat lain tanpa membutuhkan router eksternal.
+
+Pemilihan mode tersebut dilakukan melalui konfigurasi WiFi pada program ESP32.
 
 ---
 
-## 8. Teknologi yang Digunakan
+### 4. Bagaimana kombinasi mode Station dan Access Point (AP+STA) dapat dimanfaatkan dalam skenario nyata sistem IoT, misalnya pada proses konfigurasi awal perangkat (provisioning)?
 
-* **Board:** NodeMCU ESP8266
-* **Bahasa Pemrograman:** C/C++ Arduino
-* **IDE:** Arduino IDE
-* **Library:** ESP8266WiFi
-* **Koneksi:** WiFi
-* **Mode:** Station (STA) dan Access Point (AP)
+**Jawaban:**
 
----
+Mode **AP+STA** memungkinkan ESP32 terhubung ke jaringan WiFi yang sudah tersedia sebagai Station sekaligus menyediakan Access Point untuk perangkat lain.
 
-## 9. Dokumentasi
+Dalam proses **provisioning**, pengguna dapat terhubung ke Access Point yang dibuat ESP32 melalui smartphone atau laptop. Pengguna kemudian dapat memberikan informasi jaringan WiFi yang akan digunakan oleh ESP32. Setelah mendapatkan konfigurasi tersebut, ESP32 dapat terhubung ke jaringan WiFi sebagai Station.
 
-Dokumentasi yang dapat ditambahkan ke repository:
-
-* Foto rangkaian NodeMCU
-* Screenshot kode program
-* Screenshot Serial Monitor
-* Foto perangkat yang berhasil terhubung ke Access Point
-* Hasil pengujian jumlah client
+Dengan cara ini, ESP32 dapat digunakan untuk proses konfigurasi awal perangkat IoT tanpa harus mengatur SSID dan password melalui perubahan program secara langsung. Mode AP+STA merupakan gabungan antara fungsi Station dan Access Point.
 
 ---
 
-## 10. Identitas Praktikan
+# 2.8 Mengakhiri Percobaan
 
-**Nama:** Reva Aura Ramadhani
-**NIM:** H1H024059
+Setelah praktikum selesai dilakukan, beberapa hal yang perlu diperhatikan adalah:
 
-**Praktikum Internet of Things - Modul 2**
-**Universitas Jenderal Soedirman**
+1. Memastikan seluruh perangkat dan rangkaian praktikum telah dimatikan dan dilepas dengan benar.
+2. Memastikan meja praktikum dalam keadaan rapi dan bersih sebelum meninggalkan ruang praktikum.
