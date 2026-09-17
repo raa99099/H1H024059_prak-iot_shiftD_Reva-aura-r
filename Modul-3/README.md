@@ -1,6 +1,3 @@
-Berikut adalah berkas **`README.md`** lengkap dan **fiks** yang sudah diperbarui dengan memasukkan seluruh 10 soal & jawaban (Percobaan 3A, Percobaan 3B, dan Pertanyaan Analisis) secara detail dan rapi.
-
-Kamu bisa langsung menyalin (*copy-paste*) seluruh isi di dalam kotak di bawah ini ke file `README.md` di GitHub:
 
 ```markdown
 # 📡 Modul 3: Protokol Komunikasi IoT (HTTP & MQTT)
