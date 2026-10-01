@@ -1,0 +1,113 @@
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
+#include <DHT.h>
+
+// Konfigurasi WiFi & MQTT
+const char* ssid = "nneptuney";
+const char* password = "9niraaeey9:3";
+const char* mqttServer = "broker.hivemq.com";
+const int mqttPort = 1883;
+
+// Topic MQTT
+const char* topicData = "unsoed/tk245004/farhan/data";
+const char* topicPerintah = "unsoed/tk245004/farhan/perintah";
+
+// [MODIFIKASI] Menambahkan Topic Khusus Buzzer
+const char* topicBuzzer = "unsoed/tk245004/farhan/buzzer"; 
+
+#define DHTPIN D4
+#define DHTTYPE DHT11
+#define LED_PIN D2
+
+// [MODIFIKASI] Pin Hardware Buzzer
+#define BUZZER_PIN D3 
+
+DHT dht(DHTPIN, DHTTYPE);
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+unsigned long waktuTerakhirPublish = 0;
+const long intervalPublish = 5000;
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  String pesan = "";
+  for (unsigned int i = 0; i < length; i++) pesan += (char)payload[i];
+
+  JsonDocument doc;
+  if (deserializeJson(doc, pesan)) return;
+
+  // [MODIFIKASI] Memeriksa asal topic yang menerima pesan
+  if (String(topic) == topicPerintah) {
+    const char* perintah = doc["perintah"];
+    digitalWrite(LED_PIN, String(perintah) == "ON" ? HIGH : LOW);
+    Serial.print("Kontrol LED -> ");
+    Serial.println(perintah);
+  } 
+  else if (String(topic) == topicBuzzer) {
+    const char* statusBuzzer = doc["buzzer"];
+    digitalWrite(BUZZER_PIN, String(statusBuzzer) == "ON" ? HIGH : LOW);
+    Serial.print("Kontrol Buzzer -> ");
+    Serial.println(statusBuzzer);
+  }
+}
+
+void hubungkanWiFi() {
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) delay(500);
+  Serial.println("WiFi terhubung!");
+}
+
+void hubungkanMQTT() {
+  while (!client.connected()) {
+    String clientId = "ESP8266Client-" + String(random(0xffff), HEX);
+    if (client.connect(clientId.c_str())) {
+      // [MODIFIKASI] Subscribe ke kedua topic sekaligus
+      client.subscribe(topicPerintah);
+      client.subscribe(topicBuzzer);
+      Serial.println("Terhubung & Subscribe ke Topic LED dan Buzzer!");
+    } else {
+      delay(2000);
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+  digitalWrite(BUZZER_PIN, LOW);
+  dht.begin();
+
+  hubungkanWiFi();
+  client.setServer(mqttServer, mqttPort);
+  client.setCallback(callback);
+}
+
+void loop() {
+  if (!client.connected()) hubungkanMQTT();
+  client.loop(); // Memproses incoming message
+
+  // Pengiriman data sensor suhu secara non-blocking (tiap 5 detik)
+  if (millis() - waktuTerakhirPublish >= intervalPublish) {
+    waktuTerakhirPublish = millis();
+    float suhu = dht.readTemperature();
+
+    if (!isnan(suhu)) {
+      JsonDocument doc;
+      doc["suhu"] = suhu;
+      char buffer[128];
+      serializeJson(doc, buffer);
+      client.publish(topicData, buffer);
+      Serial.print("Telemetry terkirim: ");
+      Serial.println(buffer);
+    }
+  }
+
+
+Penjelasan Kode Modifikasi Percobaan 4B
+const char* topicBuzzer = "...";: Mendefinisikan alamat topic unik baru pada broker HiveMQ yang dikhususkan untuk menerima sinyal kontrol buzzer.
+client.subscribe(topicBuzzer);: Mendaftarkan NodeMCU ESP8266 agar mendengarkan pesan dari topic buzzer secara paralel dengan topic perintah LED saat berhasil terhubung ke broker.
+if (String(topic) == topicBuzzer): Logika percabangan di dalam fungsi callback() untuk membedakan target aktuator berdasarkan asal nama topic pesan yang masuk. Jika pesan diterima dari topic buzzer, program membaca key {"buzzer": "ON"} atau {"buzzer": "OFF"} dan mengubah status logika pin D3.
+}
