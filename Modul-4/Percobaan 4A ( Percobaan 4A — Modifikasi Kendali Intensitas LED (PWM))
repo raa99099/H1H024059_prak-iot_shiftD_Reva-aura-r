@@ -94,3 +94,7 @@ void loop() {
   }
   client.loop();
 }
+
+penjelasan Kode Modifikasi Percobaan 4A
+int intensitas = doc["intensitas"] | 255;: Mengambil nilai integer dari key "intensitas" dalam format payload JSON (misal {"perintah": "ON", "intensitas": 150}). Operator | 255 berfungsi sebagai nilai default jika key tersebut tidak dikirimkan.
+analogWrite(LED_PIN, intensitas);: Menggantikan perintah digitalWrite() dengan pengontrolan sinyal PWM (Pulse Width Modulation). Nilai intensitas berkisar dari 0 (redup/mati) hingga 255 (paling terang).
