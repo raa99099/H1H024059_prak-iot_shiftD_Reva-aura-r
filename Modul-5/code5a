@@ -1,12 +1,3 @@
-/*
- * MODUL 5 - PERCOBAAN 5A
- * Pengolahan Data Sensor (Moving Average dan Statistik)
- * Nama : Reva Aura Ramadhani
- * NIM  : H1H024059
- * Board: ESP8266 NodeMCU 1.0
- * Sensor: Dummy / Mock Function dari asprak
- */
-
 #include <Arduino.h>
 #include <math.h>
 
